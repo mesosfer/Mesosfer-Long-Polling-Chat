@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <!--[if IE]>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <![endif]-->
+    <title>Long Polling Chat using Mesosfer</title>
+    <!-- BOOTSTRAP CORE STYLE CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+
+</head>
+
+<body style="font-family:Verdana">
+    <div class="container">
+        <div class="row " style="padding-top:40px;">
+            <div class="col-md-8">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        Long Polling Chat
+                    </div>
+                    <div class="panel-body">
+                        <ul class="media-list" id="media-list" style="height: 300px; max-height: 300px;overflow-y: scroll;">
+                            
+                        </ul>
+                    </div>
+                    <div class="panel-footer">
+                        <form action="/messages" method="post" id="chat-form">
+                            <div class="input-group">
+                                <input id="name" type="text" class="form-control" name="name" placeholder="Enter Your Name" />
+                            </div>
+                            <div class="input-group">
+                                
+                                <textarea id="message" class="form-control" name="message" placeholder="Enter message"></textarea>
+
+                                <span class="input-group-btn">
+                                    <button class="btn btn-primary" id="btn-submit" type="button">SEND</button>
+                                </span>
+
+                            </div>
+                            <div class="alert">
+                                
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript">
+        function getMessage(lastInsertTime) {
+            var latestInsert = null;
+            if (lastInsertTime == undefined) lastInsertTime = null;
+
+            setTimeout(function(){
+                $.ajax({
+                    'url': '/messages',
+                    'type': 'GET',
+                    'dataType': 'json',
+                    'timeout': 30000,
+                    'data': 'lastInsertTime=' +lastInsertTime,
+                    success: function(result){
+                        if(result){
+                            console.log(lastInsertTime);
+                            latestInsert = result.lastInsertTime;
+                        }
+
+                        var message = result.messages
+                        var chat = $('#media-list');
+
+                        if (message.length > 0) {
+                            chat.empty();
+                            for(var i = 0; i < message.length; i++){
+                                
+                                var date = new Date(parseInt(message[i].timestamp) * 1000);
+                                var hours = date.getHours();
+                                var minutes = "0" + date.getMinutes();
+                                var seconds = "0" + date.getSeconds();
+
+                                var formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+
+                                chat.append('<li class="media">' +
+                                        '<div class="media-body">' +
+                                            '<div class="media">' +
+                                                '<div class="media-body">' +
+                                                    '<small class="text-muted"> From: <strong>' + message[i].name + '</strong> | '+ formattedTime +'</small>' +
+                                                    '<br />' +
+                                                    message[i].message + 
+                                                    '<hr />' +
+                                                '</div>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</li>');
+                            }
+                        }
+                        $('#media-list').scrollTop($('#media-list')[0].scrollHeight);
+                    },
+                    error: function(xhr, status, error) {
+                        console.log(xhr);
+                        console.log(status);
+                        console.log(error);
+                        $(".alert").html(error)
+                    },
+                    complete: function(){
+                        getMessage(latestInsert);
+                    }
+                });
+            }, 5000);
+        };
+
+        function postMessage() {
+            $.ajax({
+                'url': '/messages',
+                'type': 'POST',
+                'dataType': 'json',
+                'data': $('#chat-form').serialize(),
+                success: function(result){
+                    console.log(result);
+                    if (!result.error) {
+                        $("#message").val("");
+                    } else {
+                        $(".alert").html(result.message)
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log(xhr);
+                    console.log(status);
+                    console.log(error);
+                    $(".alert").html(error)
+                },
+            });
+        }
+
+        $(document).ready(function(){
+            getMessage();
+
+            $('#btn-submit').click(function(){
+                postMessage();
+            });
+
+            $('#message').keypress(function(e){
+                if(e.which == 13){
+                    $('#btn-submit').click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
