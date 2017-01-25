@@ -1,0 +1,9 @@
+{
+    "name": "mesosfer/long-polling-chat",
+    "description": "Simple Chat using Long Polling Method and Mesosfer Backend as a Service",
+    "require": {
+        "symfony/http-foundation": "^3.2",
+        "respect/rest": "^0.6.0",
+        "guzzlehttp/guzzle": "^6.2"
+    }
+}
